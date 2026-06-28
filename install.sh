@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# install.sh — build, install and enable the "Padding" KWin script (Id: maxpadd).
+# install.sh — build, install and enable the "Padding" KWin script (Id: padding).
 #
 # Adds a configurable gap on all four sides of maximized and snapped (quick-tiled)
 # windows. The TypeScript sources compile to pkg/contents/code/main.js; the
@@ -10,7 +10,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 PKG="$SCRIPT_DIR/pkg"
-SCRIPT_ID="maxpadd"
+SCRIPT_ID="padding"
 
 BUILD=1
 
@@ -20,7 +20,7 @@ c_warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
 
 usage() {
     cat <<EOF
-Padding (maxpadd) — KWin script installer
+Padding — KWin script installer
 
 Usage: ./install.sh [options]
 

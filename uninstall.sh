@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# uninstall.sh — disable and remove the "Padding" KWin script (Id: maxpadd).
+# uninstall.sh — disable and remove the "Padding" KWin script (Id: padding).
 #
 set -euo pipefail
 
-SCRIPT_ID="maxpadd"
+SCRIPT_ID="padding"
 
 c_ok()   { printf '\033[1;32mok\033[0m %s\n' "$*"; }
 c_warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }

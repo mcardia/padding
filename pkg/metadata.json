@@ -10,7 +10,7 @@
                 "Email": ""
             }
         ],
-        "Id": "maxpadd",
+        "Id": "padding",
         "Category": "Window Management",
         "License": "MIT",
         "Version": "1.0.0",

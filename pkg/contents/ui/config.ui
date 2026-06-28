@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-    <class>MaxpaddConfig</class>
-    <widget class="QWidget" name="MaxpaddConfig">
+    <class>PaddingConfig</class>
+    <widget class="QWidget" name="PaddingConfig">
         <layout class="QVBoxLayout" name="mainLayout">
             <item>
                 <widget class="QTabWidget" name="tabWidget">
