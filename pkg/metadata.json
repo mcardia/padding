@@ -1,0 +1,22 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Name": "Padding",
+        "Description": "Adds configurable padding around maximized and snapped windows",
+        "Icon": "preferences-system-windows",
+        "Authors": [
+            {
+                "Name": "Mario",
+                "Email": ""
+            }
+        ],
+        "Id": "maxpadd",
+        "Category": "Window Management",
+        "License": "MIT",
+        "Version": "1.0.0",
+        "Website": "https://github.com/mcardia/maxpadd"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "src/padding.js",
+    "X-KDE-ConfigModule": "kwin/effects/configs/kcm_kwin4_genericscripted"
+}

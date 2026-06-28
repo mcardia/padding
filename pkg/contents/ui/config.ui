@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MaxpaddConfig</class>
+    <widget class="QWidget" name="MaxpaddConfig">
+        <layout class="QVBoxLayout" name="mainLayout">
+            <item>
+                <widget class="QTabWidget" name="tabWidget">
+
+                    <!-- Tab 1: Padding -->
+                    <widget class="QWidget" name="tabPadding">
+                        <attribute name="title">
+                            <string>Padding</string>
+                        </attribute>
+                        <layout class="QVBoxLayout" name="paddingLayout">
+                            <item>
+                                <widget class="QLabel" name="labelDescription">
+                                    <property name="text">
+                                        <string>Gap applied on all four sides of maximized and snapped (tiled) windows. Adjacent tiles share a half-gap so the spacing stays uniform.</string>
+                                    </property>
+                                    <property name="wordWrap">
+                                        <bool>true</bool>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <layout class="QFormLayout" name="paddingForm">
+                                    <item row="0" column="0">
+                                        <widget class="QLabel" name="labelGap">
+                                            <property name="text">
+                                                <string>Gap size:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="0" column="1">
+                                        <widget class="QSpinBox" name="kcfg_gapSize">
+                                            <property name="toolTip">
+                                                <string>Space between the window edge and the screen edge, in pixels. 0 = no gap.</string>
+                                            </property>
+                                            <property name="minimum">
+                                                <number>0</number>
+                                            </property>
+                                            <property name="maximum">
+                                                <number>200</number>
+                                            </property>
+                                            <property name="value">
+                                                <number>15</number>
+                                            </property>
+                                            <property name="suffix">
+                                                <string> px</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="1" column="0">
+                                        <widget class="QLabel" name="labelSnapped">
+                                            <property name="text">
+                                                <string>Snapped windows:</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item row="1" column="1">
+                                        <widget class="QCheckBox" name="kcfg_padSnapped">
+                                            <property name="toolTip">
+                                                <string>Also add padding to snapped / quick-tiled windows (Super+Arrow halves and corners).</string>
+                                            </property>
+                                            <property name="text">
+                                                <string>Pad snapped / tiled windows</string>
+                                            </property>
+                                            <property name="checked">
+                                                <bool>true</bool>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </item>
+                            <item>
+                                <widget class="QGroupBox" name="groupDockCompensation">
+                                    <property name="title">
+                                        <string>Dock compensation</string>
+                                    </property>
+                                    <layout class="QFormLayout" name="dockForm">
+                                        <item row="0" column="0">
+                                            <widget class="QLabel" name="labelDockMode">
+                                                <property name="text">
+                                                    <string>Dock compensation:</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="0" column="1">
+                                            <widget class="QComboBox" name="kcfg_compensateDockMode">
+                                                <property name="toolTip">
+                                                    <string>Adds extra gap on the panel side to keep a floating panel floating.</string>
+                                                </property>
+                                                <item>
+                                                    <property name="text">
+                                                        <string>Off</string>
+                                                    </property>
+                                                </item>
+                                                <item>
+                                                    <property name="text">
+                                                        <string>Maximized windows only</string>
+                                                    </property>
+                                                </item>
+                                                <item>
+                                                    <property name="text">
+                                                        <string>All windows</string>
+                                                    </property>
+                                                </item>
+                                            </widget>
+                                        </item>
+                                        <item row="1" column="0">
+                                            <widget class="QLabel" name="labelDockMargin">
+                                                <property name="text">
+                                                    <string>Dock margin:</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="1" column="1">
+                                            <widget class="QSpinBox" name="kcfg_dockMargin">
+                                                <property name="toolTip">
+                                                    <string>Extra gap in pixels on the dock side.</string>
+                                                </property>
+                                                <property name="minimum">
+                                                    <number>10</number>
+                                                </property>
+                                                <property name="maximum">
+                                                    <number>20</number>
+                                                </property>
+                                                <property name="value">
+                                                    <number>12</number>
+                                                </property>
+                                                <property name="suffix">
+                                                    <string> px</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </widget>
+                            </item>
+                            <item>
+                                <spacer name="paddingSpacer">
+                                    <property name="orientation">
+                                        <enum>Qt::Vertical</enum>
+                                    </property>
+                                    <property name="sizeHint" stdset="0">
+                                        <size>
+                                            <width>20</width>
+                                            <height>40</height>
+                                        </size>
+                                    </property>
+                                </spacer>
+                            </item>
+                        </layout>
+                    </widget>
+
+                    <!-- Tab 2: Ignored Apps -->
+                    <widget class="QWidget" name="tabIgnored">
+                        <attribute name="title">
+                            <string>Ignored Apps</string>
+                        </attribute>
+                        <layout class="QVBoxLayout" name="ignoredLayout">
+                            <item>
+                                <widget class="QLabel" name="labelIgnoredDescription">
+                                    <property name="text">
+                                        <string>Window classes that are never padded. System surfaces (plasmashell, krunner, spectacle, portals, ...) are always ignored. Add extra entries below, comma-separated.</string>
+                                    </property>
+                                    <property name="wordWrap">
+                                        <bool>true</bool>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QLineEdit" name="kcfg_ignoredApps">
+                                    <property name="toolTip">
+                                        <string>Comma-separated window classes or names (case-insensitive), e.g. vlc, mpv.</string>
+                                    </property>
+                                    <property name="placeholderText">
+                                        <string>vlc, mpv, ...</string>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <spacer name="ignoredSpacer">
+                                    <property name="orientation">
+                                        <enum>Qt::Vertical</enum>
+                                    </property>
+                                    <property name="sizeHint" stdset="0">
+                                        <size>
+                                            <width>20</width>
+                                            <height>40</height>
+                                        </size>
+                                    </property>
+                                </spacer>
+                            </item>
+                        </layout>
+                    </widget>
+
+                </widget>
+            </item>
+        </layout>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>

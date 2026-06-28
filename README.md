@@ -1,106 +1,55 @@
-# maxpadd
+# Padding — KWin script (maximized + snapped window gaps)
 
-A simple KWin script that adds padding around maximized windows on KDE Plasma 6.
+A KWin 6 script that adds a configurable gap on **all four sides** of a window when it is
+**maximized** *and* when it is **snapped / quick-tiled** (Super+Left/Right/Up/Down and the
+corner quarters). Adjacent tiles share a **half-gap**, so the spacing between two snapped
+windows matches the gap to the screen edge.
 
-Instead of windows taking up the entire screen when maximized, maxpadd shrinks them by a configurable pixel gap and centers them — giving you breathing room around your windows.
+Written in **TypeScript** and compiled to a single `padding.js` (KWin's QJSEngine — no modules).
 
-## What it does
+## Features
 
-- Adds a gap (padding) around maximized windows, in pixels
-- Configurable gap size (0-200 px, default 15 px)
-- **Dock compensation** — keeps your floating panel floating, even with small gaps
-  - Three modes: Off / Maximized only / All windows
-  - Works with any tiling manager (KZones, native KWin tiling, etc.)
-  - Configurable dock margin (10-20 px)
-- **Fractional scaling support** — works correctly on HiDPI displays
-- **Fullscreen aware** — never interferes with F11 fullscreen, games, or presentations
-- Works on multiple monitors independently
-- Skips dialogs and system windows — only touches regular windows
-- Ignore list: plasma internals are always excluded, and you can add your own apps
-- Toggle: maximize a gapped window again to restore its original size
+- Gap on all four sides of maximized and quick-tiled windows.
+- Uniform spacing: outer edges get the full gap, shared/inner edges get half.
+- Optional **dock compensation**: extra margin on panel edges so a floating panel keeps floating
+  (off / maximized-only / all windows).
+- **Ignored apps** list (system surfaces are always skipped).
+- Maximize **toggle**: maximizing a gapped window a second time restores it.
 
-## Requirements
+## Build
 
-- KDE Plasma 6.0+
-- KWin 6.0+
-- Wayland or X11
-
-## Install
-
-### Option 1: Symlink (for dev / tinkering)
-
-```bash
-ln -s "$(pwd)/maxpadd" ~/.local/share/kwin/scripts/maxpadd
+```sh
+npm install
+npm run build      # tsc -> pkg/contents/src/padding.js
+npm run check      # tsc --noEmit (type-check only)
 ```
 
-### Option 2: Copy
+Sources live in `src/` (`kwin.d.ts` ambient types, `config.ts`, `geometry.ts`, `padding.ts`).
+The KWin package is `pkg/` (`metadata.json`, `contents/`). The compiled `padding.js` is
+committed so installation works without Node.
 
-```bash
-cp -r maxpadd ~/.local/share/kwin/scripts/
+## Install / uninstall
+
+```sh
+./install.sh              # build, install (kpackagetool6), enable in kwinrc, reload KWin
+./install.sh --no-build   # install the committed build without recompiling
+./install.sh --uninstall  # same as ./uninstall.sh
+./uninstall.sh            # disable + remove
 ```
 
-### Then enable it
+## Configuration
 
-```bash
-kwriteconfig6 --file kwinrc --group Plugins --key maxpaddEnabled true
-qdbus6 org.kde.KWin /KWin reconfigure
-```
+System Settings → Window Management → KWin Scripts → **Padding** → configure:
 
-Or go to **System Settings > Window Management > KWin Scripts** and toggle it on.
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `gapSize` | 15 | Gap in px on outer edges (half on shared tile edges). |
+| `padSnapped` | true | Also pad snapped / quick-tiled windows. |
+| `compensateDockMode` | 0 | Dock compensation: 0 off, 1 maximized-only, 2 all windows. |
+| `dockMargin` | 12 | Extra px on panel edges (10–20). |
+| `ignoredApps` | — | Comma-separated window classes/names to skip. |
 
-## Configure
+## Notes
 
-After enabling, go to **System Settings > Window Management > KWin Scripts**, find "maxpadd" and click the settings icon.
-
-### Padding tab
-
-- **Gap size (px):** space between the window edge and the screen edge, on all four sides.
-  - `15` (default) = 15 px border around the window
-  - `0` = no gap (normal maximize behavior)
-  - `200` = maximum gap
-
-- **Dock compensation:** prevents the floating panel from losing its floating appearance.
-  - `Off` = no compensation
-  - `Maximized windows only` = adds extra gap on the panel side for maximized windows
-  - `All windows` = also compensates tiled and snapped windows near the panel
-
-- **Dock margin (px):** how many extra pixels to add on the panel side (10-20, default 12). Increase if your panel still de-floats.
-
-### Ignored Apps tab
-
-Some apps are always ignored (plasmashell, krunner, spectacle, etc.). You can add extra apps as a comma-separated list of window class names (e.g. `discord, steam, gimp`).
-
-To find an app's window class, run `xprop WM_CLASS` and click the window, or check `qdbus6 org.kde.KWin /KWin queryWindowInfo`.
-
-## Reloading after config changes
-
-KWin doesn't reload scripts on `reconfigure`. Use the included helper:
-
-```bash
-./reload.sh         # reloads maxpadd
-./reload.sh kzones  # reloads any other KWin script
-```
-
-## How it works
-
-When you maximize a window, maxpadd intercepts it, un-maximizes it, and resizes it to the screen area minus the configured gap on each side. It reacts to screen layout changes (plugging in a monitor, etc.) so your gaps stay consistent.
-
-Maximizing a gapped window a second time restores it to its original size.
-
-With dock compensation enabled, maxpadd also monitors all windows and nudges any that get too close to the floating panel's invisible detection zone — keeping your panel pretty.
-
-It's a tiny plain JavaScript file (~120 lines). No dependencies, no build step, no bloat.
-
-## Troubleshooting
-
-Check the logs:
-
-```bash
-journalctl -f QT_CATEGORY=js QT_CATEGORY=kwin_scripting
-```
-
-If a window isn't getting the gap, make sure it's a regular window (not a dialog or splash screen) and that it's truly maximized (not just resized to fill the screen).
-
-## License
-
-GPL-3.0 — free to use, modify, and share. See [LICENSE](LICENSE) for details.
+- Custom tiles (the Tiling editor, `quickTileMode` Custom) are out of scope.
+- Requires KWin 6 (developed on Plasma 6.7, Wayland).
