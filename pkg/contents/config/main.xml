@@ -5,7 +5,19 @@
                           http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
     <kcfgfile name=""/>
     <group name="">
-        <entry name="gapSize" type="Int">
+        <entry name="gapTop" type="Int">
+            <default>15</default>
+        </entry>
+        <entry name="gapBottom" type="Int">
+            <default>15</default>
+        </entry>
+        <entry name="gapLeft" type="Int">
+            <default>15</default>
+        </entry>
+        <entry name="gapRight" type="Int">
+            <default>15</default>
+        </entry>
+        <entry name="gapSnapped" type="Int">
             <default>15</default>
         </entry>
         <entry name="padSnapped" type="Bool">

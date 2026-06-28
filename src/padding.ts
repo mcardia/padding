@@ -81,7 +81,8 @@ function compensateDockEdge(win: KWinWindow): void {
         return;
     }
 
-    const threshold = CONFIG.dockMargin + CONFIG.gapSize;
+    const maxGap = Math.max(CONFIG.gapTop, CONFIG.gapBottom, CONFIG.gapLeft, CONFIG.gapRight);
+    const threshold = CONFIG.dockMargin + maxGap;
     let x = geometry.x;
     let y = geometry.y;
     let width = geometry.width;
@@ -227,8 +228,59 @@ function applyAll(): void {
     });
 }
 
+// Signature of the gap-affecting config, to skip unrelated reconfigure events.
+function configSignature(): string {
+    return [
+        CONFIG.gapTop, CONFIG.gapBottom, CONFIG.gapLeft, CONFIG.gapRight,
+        CONFIG.gapSnapped, CONFIG.dockMode, CONFIG.dockMargin, CONFIG.padSnapped,
+        CONFIG.ignored.join("|"),
+    ].join(",");
+}
+
+let lastConfigSignature = configSignature();
+
+// KWin does not reload a running script when its settings change; instead we
+// re-read the config on reconfigure and re-pad every window so the new gaps
+// take effect live (including windows that are already maximized/snapped).
+function onConfigChanged(): void {
+    reloadConfig();
+    const signature = configSignature();
+    if (signature === lastConfigSignature) {
+        return;
+    }
+    lastConfigSignature = signature;
+
+    workspace.windowList().forEach(function (win: KWinWindow): void {
+        if (!isCandidate(win)) {
+            return;
+        }
+        const id = winId(win);
+        const state = winState[id];
+        const slot = slotForWindow(win);
+
+        if (slot) {
+            // Snapped (or freshly maximized): clear the tile marker and re-apply.
+            if (state) {
+                winState[id] = { gapped: state.gapped, geo: state.geo, tileKey: null };
+            }
+            applyGap(win);
+            return;
+        }
+
+        // Previously padded while maximized (now unmaximized): re-inset to new gaps.
+        if (state && state.gapped && state.tileKey === null) {
+            busy[id] = true;
+            const area = maximizeArea(win);
+            const gaps = gapsForSlot(win, { rect: area, edges: OUTER_EDGES, maximized: true });
+            win.frameGeometry = insetRect(area, gaps);
+            busy[id] = false;
+        }
+    });
+}
+
 workspace.windowList().forEach(connectWindow);
 workspace.windowAdded.connect(connectWindow);
 workspace.screensChanged.connect(applyAll);
 workspace.virtualScreenSizeChanged.connect(applyAll);
 workspace.virtualScreenGeometryChanged.connect(applyAll);
+options.configChanged.connect(onConfigChanged);

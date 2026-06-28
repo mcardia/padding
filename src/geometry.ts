@@ -9,7 +9,7 @@ interface Gaps {
 }
 
 // Which edges of a slot are interior (shared with an adjacent tile) vs outer
-// (touching the screen/work-area boundary). Inner edges get a half gap.
+// (touching the screen/work-area boundary). Inner edges get the snapped-divider gap.
 interface SlotEdges {
     topInner: boolean;
     bottomInner: boolean;
@@ -47,7 +47,7 @@ const EDGE_TOLERANCE = 1;
 // Quick-tile state is not exposed as a property in KWin 6.7 scripting, so snapped
 // (and custom-tiled) windows are detected via their assigned `tile`, whose
 // absoluteGeometry is the real tile rect. An edge that does not sit on the
-// work-area boundary is interior (shared with a neighbour) and gets a half gap.
+// work-area boundary is interior (shared with a neighbour) and gets the snapped gap.
 function slotForWindow(win: KWinWindow): Slot | null {
     if (win.maximizeMode === MaximizeMode.Full) {
         return { rect: maximizeArea(win), edges: OUTER_EDGES, maximized: true };
@@ -70,25 +70,26 @@ function slotForWindow(win: KWinWindow): Slot | null {
     return { rect: cloneRect(rect), edges, maximized: false };
 }
 
-// Per-side gaps: full gap on outer edges, half gap on inner (shared) edges.
+// Per-side gaps: each outer edge uses its directional gap; each inner (shared)
+// edge of a snapped window uses half of the snapped-divider gap, so the total
+// space between two adjacent snapped windows equals gapSnapped.
 // Dock compensation adds dockMargin on outer edges that face a panel.
 function gapsForSlot(win: KWinWindow, slot: Slot): Gaps {
-    const gap = CONFIG.gapSize;
-    const half = gap / 2;
+    const innerHalf = CONFIG.gapSnapped / 2;
     const edges = slot.edges;
 
     const gaps: Gaps = {
-        top: edges.topInner ? half : gap,
-        bottom: edges.bottomInner ? half : gap,
-        left: edges.leftInner ? half : gap,
-        right: edges.rightInner ? half : gap,
+        top: edges.topInner ? innerHalf : CONFIG.gapTop,
+        bottom: edges.bottomInner ? innerHalf : CONFIG.gapBottom,
+        left: edges.leftInner ? innerHalf : CONFIG.gapLeft,
+        right: edges.rightInner ? innerHalf : CONFIG.gapRight,
     };
 
     const dockActive =
         CONFIG.dockMode === DockMode.AllWindows ||
         (slot.maximized && CONFIG.dockMode === DockMode.MaximizedOnly);
 
-    if (dockActive && gap > 0) {
+    if (dockActive) {
         const margin = CONFIG.dockMargin;
         const screen = screenArea(win);
         const usable = maximizeArea(win);

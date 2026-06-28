@@ -85,8 +85,15 @@ interface KWinGlobals {
     readonly FullScreenArea: ClientAreaOption;
 }
 
+interface KWinOptions {
+    // Emitted on every KWin reconfigure, including when the user applies the
+    // script's own settings — used to re-read config and re-pad live.
+    readonly configChanged: Signal0;
+}
+
 declare const workspace: KWinWorkspace;
 declare const KWin: KWinGlobals;
+declare const options: KWinOptions;
 declare function readConfig(key: string, defaultValue?: unknown): unknown;
 
 declare const console: {

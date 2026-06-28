@@ -9,8 +9,8 @@ Written in **TypeScript** and compiled to a single `padding.js` (KWin's QJSEngin
 
 ## Features
 
-- Gap on all four sides of maximized and quick-tiled windows.
-- Uniform spacing: outer edges get the full gap, shared/inner edges get half.
+- Per-side gaps (top/bottom/left/right) on the outer edges of maximized and quick-tiled windows.
+- A separate "snapped divider" gap for the total space between adjacent snapped windows.
 - Optional **dock compensation**: extra margin on panel edges so a floating panel keeps floating
   (off / maximized-only / all windows).
 - **Ignored apps** list (system surfaces are always skipped).
@@ -44,7 +44,8 @@ System Settings → Window Management → KWin Scripts → **Padding** → confi
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `gapSize` | 15 | Gap in px on outer edges (half on shared tile edges). |
+| `gapTop` / `gapBottom` / `gapLeft` / `gapRight` | 15 | Per-side gaps (px) on the outer edges of maximized and snapped windows. |
+| `gapSnapped` | 15 | Total gap (px) between two adjacent snapped windows (split as half on each window's shared edge). |
 | `padSnapped` | true | Also pad snapped / quick-tiled windows. |
 | `compensateDockMode` | 0 | Dock compensation: 0 off, 1 maximized-only, 2 all windows. |
 | `dockMargin` | 12 | Extra px on panel edges (10–20). |
@@ -52,5 +53,6 @@ System Settings → Window Management → KWin Scripts → **Padding** → confi
 
 ## Notes
 
-- Custom tiles (the Tiling editor, `quickTileMode` Custom) are out of scope.
+- Snapped windows are detected via their assigned `tile` (`window.tile.absoluteGeometry`),
+  which also covers custom tiles from the Tiling editor.
 - Requires KWin 6 (developed on Plasma 6.7, Wayland).

@@ -50,14 +50,22 @@ function loadConfig() {
     // Legacy: older versions used a boolean "compensateDock"; honour it as mode 1.
     const legacyMode = readBool("compensateDock", false) ? 1 : 0;
     return {
-        gapSize: Math.max(0, readInt("gapSize", 15)),
+        gapTop: Math.max(0, readInt("gapTop", 15)),
+        gapBottom: Math.max(0, readInt("gapBottom", 15)),
+        gapLeft: Math.max(0, readInt("gapLeft", 15)),
+        gapRight: Math.max(0, readInt("gapRight", 15)),
+        gapSnapped: Math.max(0, readInt("gapSnapped", 15)),
         dockMargin: Math.min(20, Math.max(10, readInt("dockMargin", 12))),
         dockMode: clampDockMode(readInt("compensateDockMode", legacyMode)),
         padSnapped: readBool("padSnapped", true),
         ignored: parseIgnored(readString("ignoredApps", "")),
     };
 }
-const CONFIG = loadConfig();
+let CONFIG = loadConfig();
+// Re-read the configuration (called when the user applies new settings).
+function reloadConfig() {
+    CONFIG = loadConfig();
+}
 function isIgnored(win) {
     const resourceClass = String(win.resourceClass).toLowerCase();
     const resourceName = String(win.resourceName).toLowerCase();
@@ -89,7 +97,7 @@ const EDGE_TOLERANCE = 1;
 // Quick-tile state is not exposed as a property in KWin 6.7 scripting, so snapped
 // (and custom-tiled) windows are detected via their assigned `tile`, whose
 // absoluteGeometry is the real tile rect. An edge that does not sit on the
-// work-area boundary is interior (shared with a neighbour) and gets a half gap.
+// work-area boundary is interior (shared with a neighbour) and gets the snapped gap.
 function slotForWindow(win) {
     if (win.maximizeMode === 3 /* MaximizeMode.Full */) {
         return { rect: maximizeArea(win), edges: OUTER_EDGES, maximized: true };
@@ -108,21 +116,22 @@ function slotForWindow(win) {
     };
     return { rect: cloneRect(rect), edges, maximized: false };
 }
-// Per-side gaps: full gap on outer edges, half gap on inner (shared) edges.
+// Per-side gaps: each outer edge uses its directional gap; each inner (shared)
+// edge of a snapped window uses half of the snapped-divider gap, so the total
+// space between two adjacent snapped windows equals gapSnapped.
 // Dock compensation adds dockMargin on outer edges that face a panel.
 function gapsForSlot(win, slot) {
-    const gap = CONFIG.gapSize;
-    const half = gap / 2;
+    const innerHalf = CONFIG.gapSnapped / 2;
     const edges = slot.edges;
     const gaps = {
-        top: edges.topInner ? half : gap,
-        bottom: edges.bottomInner ? half : gap,
-        left: edges.leftInner ? half : gap,
-        right: edges.rightInner ? half : gap,
+        top: edges.topInner ? innerHalf : CONFIG.gapTop,
+        bottom: edges.bottomInner ? innerHalf : CONFIG.gapBottom,
+        left: edges.leftInner ? innerHalf : CONFIG.gapLeft,
+        right: edges.rightInner ? innerHalf : CONFIG.gapRight,
     };
     const dockActive = CONFIG.dockMode === 2 /* DockMode.AllWindows */ ||
         (slot.maximized && CONFIG.dockMode === 1 /* DockMode.MaximizedOnly */);
-    if (dockActive && gap > 0) {
+    if (dockActive) {
         const margin = CONFIG.dockMargin;
         const screen = screenArea(win);
         const usable = maximizeArea(win);
@@ -217,7 +226,8 @@ function compensateDockEdge(win) {
     if (near(geometry.width, screen.width) && near(geometry.height, screen.height)) {
         return;
     }
-    const threshold = CONFIG.dockMargin + CONFIG.gapSize;
+    const maxGap = Math.max(CONFIG.gapTop, CONFIG.gapBottom, CONFIG.gapLeft, CONFIG.gapRight);
+    const threshold = CONFIG.dockMargin + maxGap;
     let x = geometry.x;
     let y = geometry.y;
     let width = geometry.width;
@@ -350,8 +360,53 @@ function applyAll() {
         applyGap(win);
     });
 }
+// Signature of the gap-affecting config, to skip unrelated reconfigure events.
+function configSignature() {
+    return [
+        CONFIG.gapTop, CONFIG.gapBottom, CONFIG.gapLeft, CONFIG.gapRight,
+        CONFIG.gapSnapped, CONFIG.dockMode, CONFIG.dockMargin, CONFIG.padSnapped,
+        CONFIG.ignored.join("|"),
+    ].join(",");
+}
+let lastConfigSignature = configSignature();
+// KWin does not reload a running script when its settings change; instead we
+// re-read the config on reconfigure and re-pad every window so the new gaps
+// take effect live (including windows that are already maximized/snapped).
+function onConfigChanged() {
+    reloadConfig();
+    const signature = configSignature();
+    if (signature === lastConfigSignature) {
+        return;
+    }
+    lastConfigSignature = signature;
+    workspace.windowList().forEach(function (win) {
+        if (!isCandidate(win)) {
+            return;
+        }
+        const id = winId(win);
+        const state = winState[id];
+        const slot = slotForWindow(win);
+        if (slot) {
+            // Snapped (or freshly maximized): clear the tile marker and re-apply.
+            if (state) {
+                winState[id] = { gapped: state.gapped, geo: state.geo, tileKey: null };
+            }
+            applyGap(win);
+            return;
+        }
+        // Previously padded while maximized (now unmaximized): re-inset to new gaps.
+        if (state && state.gapped && state.tileKey === null) {
+            busy[id] = true;
+            const area = maximizeArea(win);
+            const gaps = gapsForSlot(win, { rect: area, edges: OUTER_EDGES, maximized: true });
+            win.frameGeometry = insetRect(area, gaps);
+            busy[id] = false;
+        }
+    });
+}
 workspace.windowList().forEach(connectWindow);
 workspace.windowAdded.connect(connectWindow);
 workspace.screensChanged.connect(applyAll);
 workspace.virtualScreenSizeChanged.connect(applyAll);
 workspace.virtualScreenGeometryChanged.connect(applyAll);
+options.configChanged.connect(onConfigChanged);

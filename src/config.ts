@@ -7,7 +7,14 @@ const enum DockMode {
 }
 
 interface PaddingConfig {
-    gapSize: number;
+    // Outer-edge gaps (the side touching the screen / work-area boundary). Used on
+    // all four sides of a maximized window and on the outer sides of snapped windows.
+    gapTop: number;
+    gapBottom: number;
+    gapLeft: number;
+    gapRight: number;
+    // Gap on the interior divider shared between adjacent snapped windows.
+    gapSnapped: number;
     dockMargin: number;
     dockMode: DockMode;
     padSnapped: boolean;
@@ -70,7 +77,11 @@ function loadConfig(): PaddingConfig {
     // Legacy: older versions used a boolean "compensateDock"; honour it as mode 1.
     const legacyMode = readBool("compensateDock", false) ? 1 : 0;
     return {
-        gapSize: Math.max(0, readInt("gapSize", 15)),
+        gapTop: Math.max(0, readInt("gapTop", 15)),
+        gapBottom: Math.max(0, readInt("gapBottom", 15)),
+        gapLeft: Math.max(0, readInt("gapLeft", 15)),
+        gapRight: Math.max(0, readInt("gapRight", 15)),
+        gapSnapped: Math.max(0, readInt("gapSnapped", 15)),
         dockMargin: Math.min(20, Math.max(10, readInt("dockMargin", 12))),
         dockMode: clampDockMode(readInt("compensateDockMode", legacyMode)),
         padSnapped: readBool("padSnapped", true),
@@ -78,7 +89,12 @@ function loadConfig(): PaddingConfig {
     };
 }
 
-const CONFIG: PaddingConfig = loadConfig();
+let CONFIG: PaddingConfig = loadConfig();
+
+// Re-read the configuration (called when the user applies new settings).
+function reloadConfig(): void {
+    CONFIG = loadConfig();
+}
 
 function isIgnored(win: KWinWindow): boolean {
     const resourceClass = String(win.resourceClass).toLowerCase();
