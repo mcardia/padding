@@ -6,6 +6,13 @@ interface WindowState {
     gapped: boolean;
     // Floating geometry captured before the window was gapped (for the maximize toggle).
     geo: RectF | null;
+    // Key of the tile rect we last padded a snapped window for (null otherwise).
+    tileKey: string | null;
+}
+
+function rectKey(rect: RectF): string {
+    return Math.round(rect.x) + "," + Math.round(rect.y) + "," +
+        Math.round(rect.width) + "x" + Math.round(rect.height);
 }
 
 const MIN_SIZE = 50;
@@ -43,19 +50,14 @@ function saveGeo(win: KWinWindow): void {
         return;
     }
 
-    const slot = slotForWindow(win);
-    const geometry = win.frameGeometry;
-    if (slot) {
-        if (rectsNear(geometry, slot.rect)) {
-            return;
-        }
-        // Stale gapped geometry left by a previous script instance.
-        if (rectsNear(geometry, insetRect(slot.rect, gapsForSlot(win, slot)))) {
-            return;
-        }
+    // Only capture the floating geometry when the window is genuinely floating
+    // (not maximized and not assigned to a tile). A snapped window may not fill
+    // its tile, so geometry matching is unreliable here — the slot check is enough.
+    if (slotForWindow(win)) {
+        return;
     }
 
-    winState[id] = { gapped: false, geo: cloneRect(geometry) };
+    winState[id] = { gapped: false, geo: cloneRect(win.frameGeometry), tileKey: null };
 }
 
 // Mode 2 only: nudge a floating window away from a dock edge it intrudes into.
@@ -134,6 +136,11 @@ function applyGap(win: KWinWindow): void {
 
     const slot = slotForWindow(win);
     if (!slot) {
+        // Floating again: forget any snap-padding marker so a future snap re-pads.
+        const prev = winState[id];
+        if (prev && prev.tileKey) {
+            winState[id] = { gapped: false, geo: prev.geo, tileKey: null };
+        }
         return;
     }
     if (!slot.maximized && !CONFIG.padSnapped) {
@@ -145,34 +152,46 @@ function applyGap(win: KWinWindow): void {
         return;
     }
 
-    const geometry = win.frameGeometry;
-    // Only act when the window is sitting at the fresh, un-gapped slot rect.
-    // (When already padded, geometry != slot.rect and we leave it be.)
-    if (!rectsNear(geometry, slot.rect)) {
-        return;
-    }
-
-    busy[id] = true;
+    const padded = insetRect(slot.rect, gaps);
     const state = winState[id];
 
-    // Maximize toggle: a second maximize from a gapped state restores the window.
-    if (slot.maximized && state && state.gapped) {
-        win.setMaximize(false, false);
-        if (state.geo) {
-            win.frameGeometry = state.geo;
+    if (slot.maximized) {
+        // Maximized windows reliably fill the maximize area, so gate on an exact
+        // match and support the second-maximize-restores toggle.
+        if (!rectsNear(win.frameGeometry, slot.rect)) {
+            return;
         }
-        winState[id] = { gapped: false, geo: state.geo };
+        busy[id] = true;
+        if (state && state.gapped) {
+            win.setMaximize(false, false);
+            if (state.geo) {
+                win.frameGeometry = state.geo;
+            }
+            winState[id] = { gapped: false, geo: state.geo, tileKey: null };
+            busy[id] = false;
+            return;
+        }
+        win.setMaximize(false, false);
+        win.frameGeometry = padded;
+        winState[id] = { gapped: true, geo: state ? state.geo : null, tileKey: null };
         busy[id] = false;
         return;
     }
 
-    if (slot.maximized) {
-        // Exit the maximized state so KWin stops enforcing the full rect.
-        win.setMaximize(false, false);
+    // Snapped/tiled: pad based on the tile assignment, not an exact geometry match.
+    // Some apps (e.g. Electron) do not fill their tile, so a strict match would
+    // never trigger. The tileKey marker prevents re-padding the same tile.
+    const tileKey = rectKey(slot.rect);
+    if (state && state.tileKey === tileKey) {
+        return;
     }
-
-    win.frameGeometry = insetRect(slot.rect, gaps);
-    winState[id] = { gapped: true, geo: state ? state.geo : null };
+    if (rectsNear(win.frameGeometry, padded)) {
+        winState[id] = { gapped: true, geo: state ? state.geo : null, tileKey: tileKey };
+        return;
+    }
+    busy[id] = true;
+    win.frameGeometry = padded;
+    winState[id] = { gapped: true, geo: state ? state.geo : null, tileKey: tileKey };
     busy[id] = false;
 }
 
@@ -191,6 +210,9 @@ function connectWindow(win: KWinWindow): void {
         applyGap(win);
     });
     win.quickTileModeChanged.connect(function (): void {
+        applyGap(win);
+    });
+    win.tileChanged.connect(function (): void {
         applyGap(win);
     });
     win.fullScreenChanged.connect(function (): void {

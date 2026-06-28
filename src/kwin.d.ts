@@ -26,18 +26,6 @@ declare const enum MaximizeMode {
     Full = 3,
 }
 
-// window.quickTileMode is a bitmask of these flags.
-declare const enum QuickTileFlag {
-    None = 0,
-    Left = 1,
-    Right = 2,
-    Top = 4,
-    Bottom = 8,
-    Custom = 16,
-    Horizontal = 3,
-    Vertical = 12,
-}
-
 // workspace.clientArea() option selector.
 declare const enum ClientAreaOption {
     PlacementArea = 0,
@@ -48,6 +36,12 @@ declare const enum ClientAreaOption {
     WorkArea = 5,
     FullArea = 6,
     ScreenArea = 7,
+}
+
+// A tile in KWin's tiling system. Quick-tiled (Super+Arrow) AND custom-tiled
+// windows are assigned one; floating/maximized windows have `tile === null`.
+interface KWinTile {
+    readonly absoluteGeometry: RectF;
 }
 
 interface KWinWindow {
@@ -61,7 +55,9 @@ interface KWinWindow {
     readonly resourceName: string;
     readonly internalId: { toString(): string };
     readonly maximizeMode: MaximizeMode;
-    readonly quickTileMode: number; // QuickTileFlag bitmask
+    // Quick-tile state is NOT exposed as `quickTileMode` in the scripting API;
+    // the assigned tile (with its geometry) is the reliable snap indicator.
+    readonly tile: KWinTile | null;
 
     frameGeometry: RectF;
     setMaximize(vertically: boolean, horizontally: boolean): void;
@@ -69,6 +65,7 @@ interface KWinWindow {
     readonly frameGeometryChanged: Signal1<RectF>;
     readonly maximizedChanged: Signal0;
     readonly quickTileModeChanged: Signal0;
+    readonly tileChanged: Signal0;
     readonly fullScreenChanged: Signal0;
 }
 

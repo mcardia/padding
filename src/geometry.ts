@@ -38,46 +38,36 @@ function screenArea(win: KWinWindow): RectF {
     return workspace.clientArea(KWin.ScreenArea, win);
 }
 
+// Tolerance (px) for deciding whether a tile edge sits on the work-area boundary.
+const EDGE_TOLERANCE = 1;
+
 // Determine the slot a window currently occupies, or null when it is floating
-// (and therefore should not be padded). Custom tiles are intentionally skipped.
+// (and therefore should not be padded).
+//
+// Quick-tile state is not exposed as a property in KWin 6.7 scripting, so snapped
+// (and custom-tiled) windows are detected via their assigned `tile`, whose
+// absoluteGeometry is the real tile rect. An edge that does not sit on the
+// work-area boundary is interior (shared with a neighbour) and gets a half gap.
 function slotForWindow(win: KWinWindow): Slot | null {
     if (win.maximizeMode === MaximizeMode.Full) {
         return { rect: maximizeArea(win), edges: OUTER_EDGES, maximized: true };
     }
 
-    const mode = win.quickTileMode;
-    if (mode === QuickTileFlag.None || (mode & QuickTileFlag.Custom) !== 0) {
+    const tile = win.tile;
+    if (!tile) {
         return null;
     }
 
-    const hasLeft = (mode & QuickTileFlag.Left) !== 0;
-    const hasRight = (mode & QuickTileFlag.Right) !== 0;
-    const hasTop = (mode & QuickTileFlag.Top) !== 0;
-    const hasBottom = (mode & QuickTileFlag.Bottom) !== 0;
-    if (!hasLeft && !hasRight && !hasTop && !hasBottom) {
-        return null;
-    }
-
+    const rect = tile.absoluteGeometry;
     const area = maximizeArea(win);
-    const halfWidth = area.width / 2;
-    const halfHeight = area.height / 2;
-
-    const rect: RectF = {
-        x: hasRight ? area.x + halfWidth : area.x,
-        y: hasBottom ? area.y + halfHeight : area.y,
-        width: hasLeft || hasRight ? halfWidth : area.width,
-        height: hasTop || hasBottom ? halfHeight : area.height,
-    };
-
-    // The edge opposite the tiled side is the split line shared with a neighbour.
     const edges: SlotEdges = {
-        leftInner: hasRight,
-        rightInner: hasLeft,
-        topInner: hasBottom,
-        bottomInner: hasTop,
+        leftInner: rect.x > area.x + EDGE_TOLERANCE,
+        rightInner: rect.x + rect.width < area.x + area.width - EDGE_TOLERANCE,
+        topInner: rect.y > area.y + EDGE_TOLERANCE,
+        bottomInner: rect.y + rect.height < area.y + area.height - EDGE_TOLERANCE,
     };
 
-    return { rect, edges, maximized: false };
+    return { rect: cloneRect(rect), edges, maximized: false };
 }
 
 // Per-side gaps: full gap on outer edges, half gap on inner (shared) edges.
