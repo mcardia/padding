@@ -3,7 +3,7 @@
 # install.sh — build, install and enable the "Padding" KWin script (Id: maxpadd).
 #
 # Adds a configurable gap on all four sides of maximized and snapped (quick-tiled)
-# windows. The TypeScript sources compile to pkg/contents/src/padding.js; the
+# windows. The TypeScript sources compile to pkg/contents/code/main.js; the
 # committed build is used as-is when Node/tsc are unavailable.
 #
 set -euo pipefail
@@ -46,13 +46,13 @@ qdbus_cli() {
     else return 1; fi
 }
 
-# 1) Build the TypeScript -> pkg/contents/src/padding.js (optional).
+# 1) Build the TypeScript -> pkg/contents/code/main.js (optional).
 if [ "$BUILD" -eq 1 ] && command -v npm >/dev/null 2>&1; then
     c_info "Building TypeScript…"
     ( cd "$SCRIPT_DIR" && npm install --no-fund --no-audit >/dev/null 2>&1 && npm run build >/dev/null )
-    c_ok "built pkg/contents/src/padding.js"
+    c_ok "built pkg/contents/code/main.js"
 else
-    [ -f "$PKG/contents/src/padding.js" ] \
+    [ -f "$PKG/contents/code/main.js" ] \
         && c_info "Using committed build (no rebuild)." \
         || { c_warn "No build present and Node unavailable; cannot install."; exit 1; }
 fi

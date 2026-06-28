@@ -20,13 +20,14 @@ Written in **TypeScript** and compiled to a single `padding.js` (KWin's QJSEngin
 
 ```sh
 npm install
-npm run build      # tsc -> pkg/contents/src/padding.js
+npm run build      # tsc -> pkg/contents/code/main.js
 npm run check      # tsc --noEmit (type-check only)
 ```
 
 Sources live in `src/` (`kwin.d.ts` ambient types, `config.ts`, `geometry.ts`, `padding.ts`).
-The KWin package is `pkg/` (`metadata.json`, `contents/`). The compiled `padding.js` is
-committed so installation works without Node.
+The KWin package is `pkg/` (`metadata.json`, `contents/`). The entry point compiles to
+`contents/code/main.js` (the path KWin/kpackagetool6 require) and is committed so installation
+works without Node.
 
 ## Install / uninstall
 
